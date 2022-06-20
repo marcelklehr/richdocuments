@@ -22,6 +22,7 @@
 namespace OCA\Richdocuments;
 
 use OC\Files\Filesystem;
+use OCA\Files_Sharing\SharedStorage;
 use OCA\Richdocuments\Db\Direct;
 use OCA\Richdocuments\Db\WopiMapper;
 use OCA\Richdocuments\Db\Wopi;
@@ -143,6 +144,21 @@ class TokenManager {
 						$editorGroup = $this->groupManager->get($editGroup);
 						if ($editorGroup !== null && $editorGroup->inGroup($editorUser)) {
 							$updatable = true;
+							break;
+						}
+					}
+				}
+
+				// disable download if at least one shared access has it disabled
+				foreach ($files as $file) {
+					$storage = $file->getStorage();
+					// using string as we have no guarantee that "files_sharing" app is loaded
+					if ($storage->instanceOfStorage('OCA\Files_Sharing\SharedStorage')) {
+						/** @var SharedStorage $storage */
+						$share = $storage->getShare();
+						$canDownload = $share->getAttributes()->getAttribute('permissions', 'download');
+						if ($canDownload !== null && !$canDownload) {
+							$hideDownload = true;
 							break;
 						}
 					}
